@@ -212,15 +212,16 @@ def updateCircuit(connection: int, value: int):
 
 class Chip:
     chips = [0]
-    gates = []
+    chipList = {}
 
     def __init__(self, name: str, inputIDs: list, outputIDs: list, savefile: str = 'savedCircuits.dat', gates=None):
-        if gates is None:
-            gates = []
         self.name = name
+        self.gates = []
         self.savefile = savefile
         self.id = self.chips[len(self.chips) - 1] + 1
         self.chips.append(self.id)
+        self.inputIDs = inputIDs
+        self.outputIDs = outputIDs
         with open(self.savefile, 'r') as savefile:
             saved = False
             lines = []
@@ -228,6 +229,8 @@ class Chip:
                 lines += line
             for line in lines:
                 if line.startswith(self.name):
+                    oldInputIDs = eval(line.split("-")[1])
+                    oldOutputIDs = eval(line.split("-")[2])
                     lineID = lines.index(line) + 1
                     for i in lines[lineID:]:
                         if i.startswith(' - '):
@@ -242,17 +245,24 @@ class Chip:
                             inputID = []
                             outputID = []
                             for ID in inputIDs:
-                                inputID.append(int(ID) + self.id * 10000)
+                                if ID in oldInputIDs:
+                                    inputID.append(inputIDs[oldInputIDs.index(ID)])
+                                else:
+                                    inputID.append(int(ID) + self.id * 10000)
                             for ID in outputIDs:
-                                outputID.append(int(ID) + self.id * 10000)
+                                if ID in oldOutputIDs:
+                                    outputID.append(outputIDs[oldOutputIDs.index(ID)])
+                                else:
+                                    outputID.append(int(ID) + self.id * 10000)
                             Gate(i.split('-')[0], i.split('-')[1], NextID, inputID, outputID)
+                            self.gates.append(NextID)
                         else:
                             break
                     saved = True
                     break
             if not saved:
                 for gateID in Gate.gates:
-                    if gateID in gates or gates is None:
+                    if gates is None or gateID in gates:
                         self.gates.append(gateID)
                         gate = Gate.gates[gateID]
                         for inputID in gate.inputIDs:
@@ -263,15 +273,33 @@ class Chip:
                             if outputID not in outputIDs:
                                 newOutputID = outputID + self.id * 10000
                                 gate.updateID([], [outputID], [], [newOutputID])
+        self.chipList.update({self.id: self})
 
     def save(self):
         with open(self.savefile, 'r') as r:
+            savedGates = []
+            for line in r:
+                savedGates.append(line)
             with open(self.savefile, 'w') as w:
-                for line in r:
-                    if self.gateType not in line.split('-', 1)[0]:
+                for line in savedGates:
+                    replace = False
+                    if not (line.startswith(self.name) and replace):
                         w.write(line)
-                w.write(self.gateType + '-' + str(self.func) + ', ' + str(len(self.inputIDs)) + ',' + str(
-                    len(self.outputIDs)))
+                    elif line.startswith(self.name) or line.startswith(" - "):
+                        replace = True
+                    else:
+                        w.write(line)
+                        replace = False
+                w.write(f'{self.name}-{self.inputIDs}-{self.outputIDs}')
+                for gate in self.gates:
+                    gate = Gate.gates[gate]
+                    inputIDs = []
+                    for inputID in gate.inputIDs:
+                        inputIDs.append(inputID % (self.id * 10000))
+                    outputIDs = []
+                    for outputID in gate.outputIDs:
+                        outputIDs.append(outputID % (self.id * 10000))
+                    w.write(f'\n - {gate.gateType}-{gate.func}-{inputIDs}-{outputIDs}')
 
 # Compare = Gate('compare', 'compare', 0, [0, 1], [0])
 
