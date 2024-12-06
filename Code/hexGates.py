@@ -132,7 +132,7 @@ def compare(inputs: list):
 
 
 def subtract(inputs: list):
-    return inputs[0] - inputs[1] if inputs[0] - inputs[1] >= 0 else 0
+    return inputs[0] - inputs[1] if inputs[0] - inputs[1] > 0 else 0
 
 
 def repeat(inputs: list):
@@ -144,7 +144,7 @@ def partialNOT(inputs: list):
 
 
 def NOT(inputs: list):
-    return subtract([15, inputs[0]]) if 15 - inputs[0] >= 0 else 0
+    return subtract([15, inputs[0]])
 
 
 def weightedOR(inputs: list):
@@ -180,6 +180,7 @@ def XAND(inputs: list):
     return AND([compare([inputs[0], inputs[1]]), compare([inputs[1], inputs[0]])])
 
 
+'''
 def halfAdder(inputs: list):
     B = compare([inputs[0], NOT([subtract([inputs[1], 1])])])
     C = compare([subtract([inputs[0], 1]), NOT([inputs[1]])])
@@ -193,6 +194,18 @@ def halfAdder(inputs: list):
     K = subtract([J, 1])
     Sum = OR([H, K])
     Cout = subtract([J, K])
+    return Sum, Cout
+'''
+
+
+def halfAdder(inputs: list):
+    A = inputs[0]
+    Cin = inputs[1]
+    B = subtract([A, NOT([subtract([Cin, 1])])])
+    BD = subtract([A, NOT([Cin])])
+    C = NOT([subtract([NOT([A]), Cin])])
+    Sum = OR([subtract([C, repeat([BD])]), B])
+    Cout = subtract([BD, subtract([BD, 1])])
     return Sum, Cout
 
 
